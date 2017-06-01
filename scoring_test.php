@@ -20,12 +20,29 @@ session_start();
 // delete session if gameover
 if (isset($_POST['gameover']) && $_POST['gameover'] == 1) {
     $_SESSION["token"] = generateRandomString(20);
-    $msg = array(
-        "err" => "0",
-        "score" => isset($_SESSION['score']) ? $_SESSION['score'] : "0" ,
-        "token" => isset($_SESSION['token']) ? $_SESSION['token'] : "",
-        "msg" => "gameover"
-    );
+
+    // Check for highscore
+    $dummyscore = 2000; // change this with real value from file or database
+    if ($_SESSION['score'] > $dummyscore) {
+        // HighScore detected. Process Highscore base on gamemode. Score can be written to a file on server here
+        $msg = array(
+            "err" => "0",
+            "score" => isset($_SESSION['score']) ? $_SESSION['score'] : 0,
+            "mode" => isset($_SESSION['gamemode']) ? $_SESSION['gamemode'] : "",
+            "token" => isset($_SESSION['token']) ? $_SESSION['token'] : "",
+            "highscore" => "1",
+            "msg" => "new high score!"
+        );
+    } else {
+        $msg = array(
+            "err" => "0",
+            "score" => isset($_SESSION['score']) ? $_SESSION['score'] : 0,
+            "mode" => isset($_SESSION['gamemode']) ? $_SESSION['gamemode'] : "",
+            "token" => isset($_SESSION['token']) ? $_SESSION['token'] : "",
+            "highscore" => "0",
+            "msg" => "gameover"
+        );
+    }
     echo json_encode($msg);
 
     session_unset();
@@ -39,24 +56,36 @@ $sharedSecretKey = "upstream_gxUIg8BfcXYk9b2Qikmd";
 $sha1_sharedSecretKey = sha1($sharedSecretKey);
 
 if ($data === $sha1_sharedSecretKey) {
-    $gamemode = $_POST['mode'];
 
-    if (!isset($_POST['token']) && !isset($_SESSION["token"])) {
+    if (isset($_SESSION['gamemode'])) {
+        // Check if abuser changed gamemode during post request
+        if ($_POST['mode'] != $_SESSION['gamemode'] ) {
+            session_unset();
+            session_destroy();
+            exit();
+        }
+
+    } else {
+        $_SESSION['gamemode'] = $_POST['mode'];
+    }
+    if (!isset($_POST['token']) && !isset($_SESSION["token"])) {    // new session
         $_SESSION['score'] = 0;
         $_SESSION["token"] = generateRandomString(20);
         $msg = array(
             "err" => "0",
-            "score" => $_SESSION['score'],
-            "mode" => $gamemode."",
+            "score" => isset($_SESSION['score']) ? $_SESSION['score'] : 0,
+            "mode" => isset($_SESSION['gamemode']) ? $_SESSION['gamemode'] : "",
             "token" => $_SESSION["token"],
+            "highscore" => "0",
             "msg" => "new session"
         );
     } else if (!isset($_POST['token'])) { // token not set
         $msg = array(
             "err" => "1",
-            "score" => isset($_SESSION['score']) ? $_SESSION['score'] : "0",
-            "mode" => $gamemode."",
+            "score" => isset($_SESSION['score']) ? $_SESSION['score'] : 0,
+            "mode" => isset($_SESSION['gamemode']) ? $_SESSION['gamemode'] : "",
             "token" => $_SESSION["token"],
+            "highscore" => "0",
             "msg" => "invalid token"
         );
     } else if (isset($_POST['token']) && !isset($_SESSION["token"])) { // token set but there is no session
@@ -64,22 +93,25 @@ if ($data === $sha1_sharedSecretKey) {
         $_SESSION["token"] = generateRandomString(20);
         $msg = array(
             "err" => "0",
-            "score" => $_SESSION['score'],
-            "mode" => $gamemode."",
+            "score" => isset($_SESSION['score']) ? $_SESSION['score'] : 0,
+            "mode" => isset($_SESSION['gamemode']) ? $_SESSION['gamemode'] : "",
             "token" => $_SESSION["token"],
-            "msg" => "invalid session 1"
+            "highscore" => "0",
+            "msg" => "invalid or no session"
         );
     } else if (isset($_POST['token']) && isset($_SESSION["token"]) && sha1($_SESSION["token"] . $sharedSecretKey) != $_POST['token'] ) { //token set but not matching with session token
         $_SESSION['score'] = 0;
         $_SESSION["token"] = generateRandomString(20);
         $msg = array(
             "err" => "1",
-            "score" => $_SESSION['score'],
-            "mode" => $gamemode."",
+            "score" => isset($_SESSION['score']) ? $_SESSION['score'] : 0,
+            "mode" => isset($_SESSION['gamemode']) ? $_SESSION['gamemode'] : "",
             "token" => $_SESSION["token"],
-            "msg" => "invalid token 2"
+            "highscore" => "0",
+            "msg" => "invalid token"
         );
-    } else if (isset($_POST['token']) && $_POST['token'] == sha1($_SESSION["token"] . $sharedSecretKey) && isset($_POST['mode']) && $_POST['mode'] != 0 ){ // everything is set correctly and tokens are matching
+    } else if ( isset($_POST['token']) && $_POST['token'] == sha1($_SESSION["token"] . $sharedSecretKey) &&
+                isset($_POST['mode']) && $_POST['mode'] != 0 && !isset($_POST['highscore'])){ // everything is set correctly and tokens are matching
         // generate new token to prevent relay attack
         $_SESSION["token"] = generateRandomString(20);
 
@@ -98,9 +130,10 @@ if ($data === $sha1_sharedSecretKey) {
 
         $msg = array(
             "err" => "0",
-            "score" => $_SESSION['score'],
-            "mode" => $gamemode."",
+            "score" => isset($_SESSION['score']) ? $_SESSION['score'] : 0,
+            "mode" => isset($_SESSION['gamemode']) ? $_SESSION['gamemode'] : "",
             "token" => $_SESSION["token"],
+            "highscore" => "0",
             "msg" => "score updated"
         );
     }
