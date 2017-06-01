@@ -1,6 +1,6 @@
 <?php
 
-/*  Upstream's scoring system using SHA1 hashing between a shared secret key and a random generated token
+/*  Jonathan's Upstream's scoring system using SHA1 hashing between a shared secret key and a random generated token
 
 1.    Each time a request is made, a new token is generated and is sent back to the application.
 2.    The application will concatenate the new token with the secret key and produce a SHA1 hash of the string.
@@ -19,10 +19,11 @@ session_start();
 
 // delete session if gameover
 if (isset($_POST['gameover']) && $_POST['gameover'] == 1) {
+    $_SESSION["token"] = generateRandomString(20);
     $msg = array(
         "err" => "0",
         "score" => isset($_SESSION['score']) ? $_SESSION['score'] : "0" ,
-        "token" => $_SESSION["token"],
+        "token" => isset($_SESSION['token']) ? $_SESSION['token'] : "",
         "msg" => "gameover"
     );
     echo json_encode($msg);
@@ -38,6 +39,7 @@ $sharedSecretKey = "test1234";
 $sha1_sharedSecretKey = sha1($sharedSecretKey);
 
 if ($data === $sha1_sharedSecretKey) {
+    $gamemode = $_POST['mode'];
 
     if (!isset($_POST['token']) && !isset($_SESSION["token"])) {
         $_SESSION['score'] = 0;
@@ -45,6 +47,7 @@ if ($data === $sha1_sharedSecretKey) {
         $msg = array(
             "err" => "0",
             "score" => $_SESSION['score'],
+            "mode" => $gamemode."",
             "token" => $_SESSION["token"],
             "msg" => "new session"
         );
@@ -52,6 +55,7 @@ if ($data === $sha1_sharedSecretKey) {
         $msg = array(
             "err" => "1",
             "score" => isset($_SESSION['score']) ? $_SESSION['score'] : "0",
+            "mode" => $gamemode."",
             "token" => $_SESSION["token"],
             "msg" => "invalid token"
         );
@@ -61,8 +65,9 @@ if ($data === $sha1_sharedSecretKey) {
         $msg = array(
             "err" => "0",
             "score" => $_SESSION['score'],
+            "mode" => $gamemode."",
             "token" => $_SESSION["token"],
-            "msg" => "invalid session"
+            "msg" => "invalid session 1"
         );
     } else if (isset($_POST['token']) && isset($_SESSION["token"]) && sha1($_SESSION["token"] . $sharedSecretKey) != $_POST['token'] ) { //token set but not matching with session token
         $_SESSION['score'] = 0;
@@ -70,8 +75,9 @@ if ($data === $sha1_sharedSecretKey) {
         $msg = array(
             "err" => "1",
             "score" => $_SESSION['score'],
+            "mode" => $gamemode."",
             "token" => $_SESSION["token"],
-            "msg" => "invalid token"
+            "msg" => "invalid token 2"
         );
     } else if (isset($_POST['token']) && $_POST['token'] == sha1($_SESSION["token"] . $sharedSecretKey) && isset($_POST['mode']) && $_POST['mode'] != 0 ){ // everything is set correctly and tokens are matching
         // generate new token to prevent relay attack
@@ -93,6 +99,7 @@ if ($data === $sha1_sharedSecretKey) {
         $msg = array(
             "err" => "0",
             "score" => $_SESSION['score'],
+            "mode" => $gamemode."",
             "token" => $_SESSION["token"],
             "msg" => "score updated"
         );
