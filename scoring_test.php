@@ -24,7 +24,7 @@ if (isset($_POST['gameover']) && $_POST['gameover'] == 1) {
     // Check for highscore
     $dummyscore = 2000; // change this with real value from file or database
     if ($_SESSION['score'] > $dummyscore) {
-        // HighScore detected. Process Highscore base on gamemode. Score can be written to a file on server here
+        // HighScore detected. Process Highscore based on gamemode and write to file here.
         $msg = array(
             "err" => "0",
             "score" => isset($_SESSION['score']) ? $_SESSION['score'] : 0,
@@ -33,7 +33,11 @@ if (isset($_POST['gameover']) && $_POST['gameover'] == 1) {
             "highscore" => "1",
             "msg" => "new high score!"
         );
+        echo json_encode($msg);     
+
+        destroySession();
     } else {
+        // Score is not a high score :(
         $msg = array(
             "err" => "0",
             "score" => isset($_SESSION['score']) ? $_SESSION['score'] : 0,
@@ -42,13 +46,16 @@ if (isset($_POST['gameover']) && $_POST['gameover'] == 1) {
             "highscore" => "0",
             "msg" => "gameover"
         );
+        echo json_encode($msg);
+        destroySession();
     }
-    echo json_encode($msg);
+}
 
+function destroySession() {
     session_unset();
     session_destroy();
     exit();
-}
+};
 
 // Hash Validations
 $data = $_POST['extra'];
