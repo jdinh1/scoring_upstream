@@ -50,12 +50,6 @@ if (isset($_POST['gameover']) && $_POST['gameover'] == 1) {
     }
 }
 
-function destroySession() {
-    session_unset();
-    session_destroy();
-    exit();
-};
-
 // Hash Validations
 $data = $_POST['extra'];
 $sharedSecretKey = "upstream_gxUIg8BfcXYk9b2Qikmd";
@@ -153,6 +147,12 @@ if (isset($msg)) {
 function generateRandomString($length = 15) {
     return substr(str_shuffle(str_repeat($x='0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', ceil($length/strlen($x)) )),1,$length);
 }
+
+function destroySession() {
+    session_unset();
+    session_destroy();
+    exit();
+};
 
 
 
