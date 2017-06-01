@@ -1,6 +1,6 @@
 <?php
 
-/*  Jonathan's Upstream's scoring system using SHA1 hashing between a shared secret key and a random generated token
+/*  Upstream's scoring system using SHA1 hashing between a shared secret key and a random generated token
 
 1.    Each time a request is made, a new token is generated and is sent back to the application.
 2.    The application will concatenate the new token with the secret key and produce a SHA1 hash of the string.
@@ -33,8 +33,7 @@ if (isset($_POST['gameover']) && $_POST['gameover'] == 1) {
             "highscore" => "1",
             "msg" => "new high score!"
         );
-        echo json_encode($msg);     
-
+        echo json_encode($msg);
         destroySession();
     } else {
         // Score is not a high score :(
