@@ -35,7 +35,7 @@ if (isset($_POST['gameover']) && $_POST['gameover'] == 1) {
 
 // Hash Validations
 $data = $_POST['extra'];
-$sharedSecretKey = "test1234";
+$sharedSecretKey = "upstream_gxUIg8BfcXYk9b2Qikmd";
 $sha1_sharedSecretKey = sha1($sharedSecretKey);
 
 if ($data === $sha1_sharedSecretKey) {
