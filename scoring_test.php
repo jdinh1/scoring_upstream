@@ -116,15 +116,15 @@ if ($data === $sha1_sharedSecretKey) {
         $_SESSION["token"] = generateRandomString(20);
 
         // scoring based on mode
-        switch($_POST['mode']) {
-            case 1:
+        switch($_POST['scoringObject']) {
+            case 0: // not hitting any fly or log
+                $_SESSION['score'] += 0;
+                break;
+            case 1: // increment for hitting fly
                 $_SESSION['score'] += 10;
                 break;
-            case 2:
-                $_SESSION['score'] += 20;
-                break;
-            case 3:
-                $_SESSION['score'] += 30;
+            case 2: // increment for hitting log
+                $_SESSION['score'] += 2;
                 break;
         }
 
