@@ -246,8 +246,11 @@ function to_xml(SimpleXMLElement $object, array $data)
 
 
 //read in xml data
-if (file_exists('androidHS.xml')) {
-    $xml = simplexml_load_file('androidHS.xml');
+//if (file_exists('androidHS.xml')) {
+//    $xml = simplexml_load_file('androidHS.xml');
+if (file_exists('highscores.json')) {
+    $data = json_decode(file_get_contents('highscores.json'));
+
 
 ?>
 <div id ="score">
@@ -261,7 +264,7 @@ if (file_exists('androidHS.xml')) {
   </thead>
   <tbody>
 
-<?php foreach ($xml->player as $playerElement) :?>
+<?php foreach ($data->players->player as $playerElement) :?>
     <tr>
       <td><?php echo $playerElement->name; ?></td>
       <td><?php echo $playerElement->score; ?></td>
