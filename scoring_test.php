@@ -23,32 +23,12 @@ if (isset($_POST['gameover']) && $_POST['gameover'] == 1) {
 
     // Check for highscore
     $dummyscore = 2000; // change this with real value from file or database
-    if ($_SESSION['score'] > $dummyscore) {
-        // HighScore detected. Process Highscore based on gamemode and write to file here.
-        $msg = array(
-            "err" => "0",
-            "score" => isset($_SESSION['score']) ? $_SESSION['score'] : 0,
-            "mode" => isset($_SESSION['gamemode']) ? $_SESSION['gamemode'] : "",
-            "token" => isset($_SESSION['token']) ? $_SESSION['token'] : "",
-            "highscore" => "1",
-            "msg" => "new high score!"
-        );
-        echo json_encode($msg);
-        destroySession();
-    } else {
-        // Score is not a high score :(
-        $msg = array(
-            "err" => "0",
-            "score" => isset($_SESSION['score']) ? $_SESSION['score'] : 0,
-            "mode" => isset($_SESSION['gamemode']) ? $_SESSION['gamemode'] : "",
-            "token" => isset($_SESSION['token']) ? $_SESSION['token'] : "",
-            "highscore" => "0",
-            "msg" => "gameover"
-        );
-        echo json_encode($msg);
-        destroySession();
-    }
+    $playername = $_POST['playername'] != "" ? $_POST['playername'] : "Player";
+    // get the list of high scores
+    checkIfScoreIsHighScore($_SESSION['score'], $_SESSION['gamemode'], $playername);
+
 }
+
 
 // Hash Validations
 $data = $_POST['extra'];
@@ -76,7 +56,7 @@ if ($data === $sha1_sharedSecretKey) {
             "score" => isset($_SESSION['score']) ? $_SESSION['score'] : 0,
             "mode" => isset($_SESSION['gamemode']) ? $_SESSION['gamemode'] : "",
             "token" => $_SESSION["token"],
-            "highscore" => "0",
+            "highscore" => false,
             "msg" => "new session"
         );
     } else if (!isset($_POST['token'])) { // token not set
@@ -85,7 +65,7 @@ if ($data === $sha1_sharedSecretKey) {
             "score" => isset($_SESSION['score']) ? $_SESSION['score'] : 0,
             "mode" => isset($_SESSION['gamemode']) ? $_SESSION['gamemode'] : "",
             "token" => $_SESSION["token"],
-            "highscore" => "0",
+            "highscore" => false,
             "msg" => "invalid token"
         );
     } else if (isset($_POST['token']) && !isset($_SESSION["token"])) { // token set but there is no session
@@ -96,7 +76,7 @@ if ($data === $sha1_sharedSecretKey) {
             "score" => isset($_SESSION['score']) ? $_SESSION['score'] : 0,
             "mode" => isset($_SESSION['gamemode']) ? $_SESSION['gamemode'] : "",
             "token" => $_SESSION["token"],
-            "highscore" => "0",
+            "highscore" => false,
             "msg" => "invalid or no session"
         );
     } else if (isset($_POST['token']) && isset($_SESSION["token"]) && sha1($_SESSION["token"] . $sharedSecretKey) != $_POST['token'] ) { //token set but not matching with session token
@@ -107,7 +87,7 @@ if ($data === $sha1_sharedSecretKey) {
             "score" => isset($_SESSION['score']) ? $_SESSION['score'] : 0,
             "mode" => isset($_SESSION['gamemode']) ? $_SESSION['gamemode'] : "",
             "token" => $_SESSION["token"],
-            "highscore" => "0",
+            "highscore" => false,
             "msg" => "invalid token"
         );
     } else if ( isset($_POST['token']) && $_POST['token'] == sha1($_SESSION["token"] . $sharedSecretKey) &&
@@ -116,16 +96,18 @@ if ($data === $sha1_sharedSecretKey) {
         $_SESSION["token"] = generateRandomString(20);
 
         // scoring based on mode
-        switch($_POST['scoringObject']) {
-            case 0: // not hitting any fly or log
-                $_SESSION['score'] += 0;
-                break;
-            case 1: // increment for hitting fly
-                $_SESSION['score'] += 10;
-                break;
-            case 2: // increment for hitting log
-                $_SESSION['score'] += 2;
-                break;
+        if (isset($_POST['scoringObject'])) {
+            switch ($_POST['scoringObject']) {
+                case 0: // not hitting any fly or log
+                    $_SESSION['score'] += 0;
+                    break;
+                case 1: // increment for hitting fly
+                    $_SESSION['score'] += 10;
+                    break;
+                case 2: // increment for hitting log
+                    $_SESSION['score'] += 2;
+                    break;
+            }
         }
 
         $msg = array(
@@ -133,16 +115,19 @@ if ($data === $sha1_sharedSecretKey) {
             "score" => isset($_SESSION['score']) ? $_SESSION['score'] : 0,
             "mode" => isset($_SESSION['gamemode']) ? $_SESSION['gamemode'] : "",
             "token" => $_SESSION["token"],
-            "highscore" => "0",
+            "highscore" => false,
             "msg" => "score updated"
         );
     }
 }
 
+
+// return data to app
 if (isset($msg)) {
     echo json_encode($msg);
     exit();
 }
+
 
 function generateRandomString($length = 15) {
     return substr(str_shuffle(str_repeat($x='0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', ceil($length/strlen($x)) )),1,$length);
@@ -154,6 +139,79 @@ function destroySession() {
     exit();
 };
 
+function checkIfScoreIsHighScore($tscore, $tmode, $tplayername ) {
+    $FILE_NAME = "highscores.json";
+
+    if(file_exists($FILE_NAME)) {
+        $data = json_decode(file_get_contents($FILE_NAME));
+        $myscore = $tscore;
+        $mode = $tmode;
+        $lowest = 999999;
+        $temp_index = 0;
+        $player = $tplayername;
+        foreach($data->players->player as $index => $score) {
+            if ($score->mode == $mode) {
+                if ($score->score < $lowest) {
+                    $lowest = $score->score;
+                    $temp_index = $index;
+                }
+
+            }
+        }
+
+        if ($myscore > $lowest) {
+
+            $data2 = array_values($data->players->player);
+            #print_r($data2);
+
+            $data->players->player[$temp_index]->score = $myscore;
+            $data->players->player[$temp_index]->name = $player;
+            $playerList = $data->players->player;
+            usort($playerList, 'sortHighScore');
+            $data->players->player = $playerList;
+            #print_r($data->players->player);
+            $newdata = json_encode($data);
+
+            //print_r($newdata);
+            file_put_contents($FILE_NAME, $newdata);
+            $msg = array(
+                "err" => "0",
+                "score" => isset($_SESSION['score']) ? $_SESSION['score'] : 0,
+                "mode" => isset($_SESSION['gamemode']) ? $_SESSION['gamemode'] : "",
+                "token" => isset($_SESSION['token']) ? $_SESSION['token'] : "",
+                "highscore" => true,
+                "msg" => "new high score!"
+            );
+            echo json_encode($msg);
+            destroySession();
+        } else {
+            //            // Score is not a high score :(
+            $msg = array(
+                "err" => "0",
+                "score" => isset($_SESSION['score']) ? $_SESSION['score'] : 0,
+                "mode" => isset($_SESSION['gamemode']) ? $_SESSION['gamemode'] : "",
+                "token" => isset($_SESSION['token']) ? $_SESSION['token'] : "",
+                "highscore" => false,
+                "msg" => "gameover"
+            );
+            echo json_encode($msg);
+            destroySession();
+        }
+        //print_r($temp_score_arr);
+    }
+
+}
+
+function sortHighScore($a, $b) {
+    if ($a->score > $b->score) {
+        return -1;
+    } else if ($a->score < $b->score) {
+        return 1;
+    } else {
+        return 0;
+    }
+
+}
 
 
 ?>
