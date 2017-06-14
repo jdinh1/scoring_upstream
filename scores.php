@@ -264,12 +264,24 @@ if (file_exists('highscores.json')) {
   </thead>
   <tbody>
 
-<?php foreach ($data->players->player as $playerElement) :?>
-    <tr>
-      <td><?php echo $playerElement->name; ?></td>
-      <td><?php echo $playerElement->score; ?></td>
-      <td><?php echo $playerElement->mode; ?></td>
-    </tr>
+<?php foreach ($data->players->player as $playerElement) :
+    echo '<tr>';
+    echo '<td>'.$playerElement->name.'</td>';
+    echo '<td>'.$playerElement->score.'</td>';
+    switch ($playerElement->mode) {
+        case 1:
+            echo '<td>Easy</td>';
+            break;
+        case 2:
+            echo '<td>Medium</td>';
+            break;
+        case 3:
+            echo '<td>Hard</td>';
+            break;
+    }
+    echo '</tr>';
+?>
+
 <?php endforeach; ?>
   </tbody>
 </table>
