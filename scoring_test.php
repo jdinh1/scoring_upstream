@@ -188,7 +188,8 @@ function checkIfScoreIsHighScore($tscore, $tmode, $tplayername ) {
             //            // Score is not a high score :(
             $msg = array(
                 "err" => "0",
-                "score" => isset($_SESSION['score']) ? $_SESSION['score'] : 0,
+                //"score" => isset($_SESSION['score']) ? $_SESSION['score'] : 0,
+                "score" => 0,
                 "mode" => isset($_SESSION['gamemode']) ? $_SESSION['gamemode'] : "",
                 "token" => isset($_SESSION['token']) ? $_SESSION['token'] : "",
                 "highscore" => false,
